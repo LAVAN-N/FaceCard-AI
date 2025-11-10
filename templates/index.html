@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FaceMatch AI | Facial Recognition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<link rel="stylesheet" href="static/style.css"/>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">F</div>
+                <span>FaceMatch AI</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="upload-section">
+                <h2 class="section-title">
+                    <span>Upload Image</span>
+                </h2>
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <button style="margin-bottom: 4%; margin-top: -8%; margin-left: 90%" type="button" class="add-file" id="resetImgBtn">×</button>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">🏞️</div>
+                    <p class="upload-text">Drag & drop an image or click to browse</p>
+                    <input type="file" id="file-input" name="image" accept="image/*" required class="file-input">
+                    <label for="file-input" class="file-label">Browse</label>
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <img id="imagePreview" class="image-preview" src="#" alt="Image preview">
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn" form="uploadForm">
+                    <span>Analyze </span>
+                    <div class="spinner" id="spinner"></div>
+                </button>
+
+                </form>
+            </section>
+
+            <section class="results-section">
+    <h2 class="section-title">
+        <span>Analysis Results</span>
+        <button style="margin-left: 40%" type="button" class="reset-btn" id="resetBtn">Clear</button>
+    </h2>
+
+    <div class="results-container" id="resultsContainer">
+        {% if label or top_object %}
+            <div class="match-card">
+                <h3 class="match-title">Best Match</h3>
+                <div class="match-value">{{ label }}</div>
+                {% if score %}
+                <div class="confidence-meter">
+                    <div class="confidence-bar" style="width: {{ score }}%"></div>
+                </div>
+                {% else %}
+                <div class="confidence-meter">
+                    <div class="confidence-bar" style="width:0%"></div>
+                </div>
+                {% endif %}
+
+
+                <div class="confidence-text">Similarity Score: {{ score }}</div>
+            </div>
+
+            {% if extra_info and extra_info.age is defined %}
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-icon">📈</div>
+                    <div class="insight-value">{{ extra_info.age }}</div>
+                    <div class="insight-label">Age</div>
+                </div>
+
+                <div class="insight-card">
+                    <div class="insight-icon">👤</div>
+                    <div class="insight-value">{{ extra_info.gender }}</div>
+                    <div class="insight-label">Gender</div>
+                </div>
+
+                <div class="insight-card">
+                    <div class="insight-icon">😊</div>
+                    <div class="insight-value">{{ extra_info.dominant_emotion }}</div>
+                    <div class="insight-label">Emotion</div>
+                </div>
+
+                {% if top_object %}
+                <div class="insight-card">
+                    <div class="insight-icon">🧠</div>
+                    <div class="insight-value">
+                        {% if top_object.label == 'backpack' %}
+                            Carrying Backpack
+                        {% elif top_object.label == 'tie' %}
+                            Wearing Tie
+                        {% else %}
+                            Detected: {{ top_object.label }}
+                        {% endif %}
+                    </div>
+                    <div class="insight-label">Confidence: {{ top_object.confidence }}%</div>
+                </div>
+                {% else %}
+                <div class="insight-card">
+                    <div class="insight-icon">🧠</div>
+                    <div class="insight-value">No Object Detected</div>
+                    <div class="insight-label">N/A</div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="no-results">No additional analysis data available</p>
+            {% endif %}
+
+        {% else %}
+            <p class="no-results">Upload an image to see analysis results</p>
+        {% endif %}
+    </div>
+</section>
+        </main>
+    </div>
+
+    <script>
+    const resetBtn = document.getElementById('resetBtn');
+
+    resetBtn.addEventListener('click', () => {
+
+        // Reset match result
+        const matchValue = document.querySelector('.match-value');
+        const confidenceBar = document.querySelector('.confidence-bar');
+        const confidenceText = document.querySelector('.confidence-text');
+
+        if (matchValue) matchValue.textContent = 'N/A';
+        if (confidenceBar) confidenceBar.style.width = '0%';
+        if (confidenceText) confidenceText.textContent = 'Confidence: N/A';
+
+        // Reset additional info
+        const insightCards = document.querySelectorAll('.insight-card .insight-value');
+        insightCards.forEach(el => el.textContent = 'N/A');
+    });
+
+    // File upload and preview functionality
+    const fileInput = document.getElementById('file-input');
+    const uploadArea = document.getElementById('uploadArea');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const uploadForm = document.getElementById('uploadForm');
+
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                previewContainer.style.display = 'block';
+                uploadArea.style.display = 'none';
+            }
+
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--primary)';
+        uploadArea.style.backgroundColor = 'rgba(72, 149, 239, 0.1)';
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = 'var(--light-gray)';
+        uploadArea.style.backgroundColor = 'transparent';
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--light-gray)';
+        uploadArea.style.backgroundColor = 'transparent';
+
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        }
+    });
+
+    // Form submission
+    uploadForm.addEventListener('submit', function(e) {
+        // Prevent the default form submission behavior that might reload the page
+        e.preventDefault();
+
+        submitBtn.disabled = true;
+        spinner.style.display = 'block';
+        submitBtn.querySelector('span').textContent = 'Analyzing...';
+
+        // Submit the form programmatically
+        const formData = new FormData(uploadForm);
+
+        fetch(uploadForm.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text();
+            }
+            throw new Error('Network response was not ok.');
+        })
+        .then(html => {
+            // Replace the results container with the new HTML
+            document.getElementById('resultsContainer').innerHTML =
+                new DOMParser().parseFromString(html, 'text/html')
+                .getElementById('resultsContainer').innerHTML;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            spinner.style.display = 'none';
+            submitBtn.querySelector('span').textContent = 'Analyze Image';
+        });
+    });
+
+    // Reset upload area when clicking on it
+    uploadArea.addEventListener('click', function() {
+        if (previewContainer.style.display === 'block') {
+            previewContainer.style.display = 'none';
+            uploadArea.style.display = 'block';
+            fileInput.value = '';
+        }
+    });
+
+    const resetImgBtn = document.getElementById('resetImgBtn');
+
+    resetImgBtn.addEventListener('click', () => {
+    // Reset file input and preview
+        fileInput.value = '';
+        imagePreview.src = '#';
+        previewContainer.style.display = 'none';
+        uploadArea.style.display = 'block';
+    });
+</script>
+</body>
+</html>
