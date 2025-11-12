@@ -11,7 +11,7 @@ from deepface import DeepFace
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 mtcnn = MTCNN(image_size=160, margin=0, device=device)
 facenet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
-model = YOLO('./models/yolov8n.pt')
+model = YOLO('models/yolov8n.pt')
 
 TARGET_CLASSES = {
     27: 'backpack',
@@ -23,7 +23,7 @@ TARGET_CLASSES = {
 }
 
 # Load precomputed models
-with open('./models/face_data.pkl', 'rb') as f:
+with open('models/face_data.pkl', 'rb') as f:
     face_data = pickle.load(f)
 dataset_embeddings = np.array([entry['embedding'] for entry in face_data])
 dataset_labels = [entry['label'] for entry in face_data]

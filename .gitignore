@@ -13,10 +13,7 @@ __pycache__/
 .history/
 *.swp
 *.swo
-.DS_Store
-Thumbs.db
 
 # Cache directories
-.npm/
 .eslintcache
 .stylelintcache

@@ -21,10 +21,10 @@
                 <h2 class="section-title">
                     <span>Upload Image</span>
                 </h2>
-                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm" action="/upload">
                     <button style="margin-bottom: 4%; margin-top: -8%; margin-left: 90%" type="button" class="add-file" id="resetImgBtn">×</button>
                 <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">🏞️</div>
+                    <div for="file-input" class="upload-icon">🏞️</div>
                     <p class="upload-text">Drag & drop an image or click to browse</p>
                     <input type="file" id="file-input" name="image" accept="image/*" required class="file-input">
                     <label for="file-input" class="file-label">Browse</label>
